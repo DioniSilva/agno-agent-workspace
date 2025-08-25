@@ -4,7 +4,6 @@ from typing import Iterator
 from agno.agent import Agent, RunResponse
 from agno.models.google import Gemini
 from agno.storage.postgres import PostgresStorage
-from agno.tools.yfinance import YFinanceTools
 from agno.utils.log import logger
 from agno.workflow import Workflow
 
@@ -26,7 +25,7 @@ class InvestmentReportGenerator(Workflow):
     stock_analyst: Agent = Agent(
         name="Stock Analyst",
         model=Gemini(id=workflow_settings.gemini_2_5_pro),
-        tools=[YFinanceTools(company_info=True, analyst_recommendations=True, company_news=True)],
+        tools=[],
         description=dedent("""\
         You are MarketMaster-X, an elite Senior Investment Analyst at Goldman Sachs with expertise in:
 

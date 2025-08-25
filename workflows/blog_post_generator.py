@@ -6,7 +6,6 @@ from agno.agent import Agent
 from agno.models.google import Gemini
 from agno.storage.postgres import PostgresStorage
 from agno.tools.duckduckgo import DuckDuckGoTools
-from agno.tools.newspaper4k import Newspaper4kTools
 from agno.utils.log import logger
 from agno.workflow import RunEvent, RunResponse, Workflow
 from pydantic import BaseModel, Field
@@ -81,7 +80,7 @@ class BlogPostGenerator(Workflow):
     # Content Scraper: Extracts and processes article content
     article_scraper: Agent = Agent(
         model=Gemini(id=workflow_settings.gemini_2_5_pro),
-        tools=[Newspaper4kTools()],
+        tools=[],
         description=dedent("""\
         You are ContentBot-X, a specialist in extracting and processing digital content
         for blog creation. Your expertise includes:

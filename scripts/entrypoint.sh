@@ -12,6 +12,14 @@ fi
 
 ############################################################################
 # Wait for Services
+
+# Ensure project root is on PYTHONPATH so imports like `utils` and `agents` resolve
+if [[ -z "$PYTHONPATH" ]]; then
+  export PYTHONPATH="/app"
+elif [[ ":$PYTHONPATH:" != *":/app:"* ]]; then
+  export PYTHONPATH="/app:$PYTHONPATH"
+fi
+
 ############################################################################
 
 if [[ "$WAIT_FOR_DB" = true || "$WAIT_FOR_DB" = True ]]; then

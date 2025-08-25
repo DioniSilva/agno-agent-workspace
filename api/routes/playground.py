@@ -19,9 +19,25 @@ multi_language_team = get_multi_language_team(debug_mode=True)
 
 # Create a playground instance
 playground = Playground(agents=[sage_agent, scholar_agent], teams=[finance_researcher_team, multi_language_team])
+app = playground.get_app()
 
 # Register the endpoint where playground routes are served with agno.com
 if getenv("RUNTIME_ENV") == "dev":
-    playground.serve(f"http://localhost:{dev_fastapi.host_port}")
+    # Try the modern API first, fallback to alternative helpers for older/newer agno versions
+    try:
+        playground.serve("playground:app", f"http://localhost:{dev_fastapi.host_port}")
+    except AttributeError:
+        try:
+            # module-level helper
+            from agno.playground import serve_playground_app
+
+            serve_playground_app("playground:app", f"http://localhost:{dev_fastapi.host_port}")
+        except Exception:
+            # last resort: introspect Playground instance
+            try:
+                playground.register_app_on_platform("playground:app", f"http://localhost:{dev_fastapi.host_port}")
+            except Exception:
+                # give up silently (playground will still work locally without registration)
+                pass
 
 playground_router = playground.get_async_router()

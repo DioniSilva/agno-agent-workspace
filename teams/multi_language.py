@@ -66,7 +66,7 @@ def get_multi_language_team(
     session_id: Optional[str] = None,
     debug_mode: bool = True,
 ) -> Team:
-    model_id = model_id or team_settings.gpt_4
+    model_id = model_id or team_settings.gemini_2_5_pro
 
     return Team(
         name="Multi Language Team",

@@ -40,8 +40,9 @@ container_env = {
     "EXA_API_KEY": getenv("EXA_API_KEY"),
     "GOOGLE_API_KEY": getenv("GOOGLE_API_KEY"),
     # Enable monitoring
-    "AGNO_MONITOR": "True",
+    "AGNO_MONITOR": getenv("AGNO_MONITOR") or "True",
     "AGNO_API_KEY": getenv("AGNO_API_KEY"),
+    "DEBUG_MODE": getenv("DEBUG_MODE") or "True",
     # Database configuration
     "DB_HOST": dev_db.get_db_host(),
     "DB_PORT": dev_db.get_db_port(),

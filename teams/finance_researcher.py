@@ -6,78 +6,36 @@ from agno.models.google import Gemini
 from agno.storage.postgres import PostgresStorage
 from agno.team.team import Team
 from agno.tools.duckduckgo import DuckDuckGoTools
-from agno.tools.yfinance import YFinanceTools
 
 from db.session import db_url
 from teams.settings import team_settings
 
-finance_agent = Agent(
-    name="Finance Agent",
-    role="Analyze financial data",
-    agent_id="finance-agent",
-    model=Gemini(
-        id=team_settings.gemini_2_5_pro,
-        max_output_tokens=team_settings.default_max_completion_tokens,
-        temperature=team_settings.default_temperature,
-    ),
-    tools=[YFinanceTools(enable_all=True, cache_results=True)],
-    instructions=dedent("""\
-        You are a seasoned Wall Street analyst with deep expertise in market analysis! 📊
+from utils.base_agent import create_agent
 
-        Follow these steps for comprehensive financial analysis:
-        1. Market Overview
-        - Latest stock price
-        - 52-week high and low
-        2. Financial Deep Dive
-        - Key metrics (P/E, Market Cap, EPS)
-        3. Professional Insights
-        - Analyst recommendations breakdown
-        - Recent rating changes
+def finance_agent() -> Agent:
 
-        4. Market Context
-        - Industry trends and positioning
-        - Competitive analysis
-        - Market sentiment indicators
+    agent: Agent = create_agent(
+        name="Finance Agent",
+        prompt_path="prompts/agents/finance.yaml",
+        model_id=team_settings.gemini_2_5_pro,
+        tools=[DuckDuckGoTools(cache_results=True)],
+        db_url=db_url,
+        storage_table="finance_agent",
+    )
 
-        Your reporting style:
-        - Begin with an executive summary
-        - Use tables for data presentation
-        - Include clear section headers
-        - Add emoji indicators for trends (📈 📉)
-        - Highlight key insights with bullet points
-        - Compare metrics to industry averages
-        - Include technical term explanations
-        - End with a forward-looking analysis
+    return agent
 
-        Risk Disclosure:
-        - Always highlight potential risk factors
-        - Note market uncertainties
-        - Mention relevant regulatory concerns
-    """),
-    storage=PostgresStorage(table_name="finance_agent", db_url=db_url, auto_upgrade_schema=True),
-    add_history_to_messages=True,
-    num_history_responses=5,
-    add_datetime_to_instructions=True,
-    markdown=True,
-)
+def web_agent() -> Agent:
 
-web_agent = Agent(
-    name="Web Agent",
-    role="Search the web for information",
-    model=Gemini(
-        id=team_settings.gemini_2_5_pro,
-        max_output_tokens=team_settings.default_max_completion_tokens,
-        temperature=team_settings.default_temperature,
-    ),
-    tools=[DuckDuckGoTools(cache_results=True)],
-    agent_id="web-agent",
-    instructions=[
-        "You are an experienced web researcher and news analyst!",
-    ],
-    show_tool_calls=True,
-    markdown=True,
-    storage=PostgresStorage(table_name="web_agent", db_url=db_url, auto_upgrade_schema=True),
-)
+    agent: Agent = create_agent(
+        name="Web Agent",
+        prompt_path="prompts/agents/web_agent.yaml",
+        model_id=team_settings.gemini_2_5_pro,
+        tools=[DuckDuckGoTools(cache_results=True)],
+        db_url=db_url,
+        storage_table="web_agent",
+    )
+    return agent
 
 
 def get_finance_researcher_team(
@@ -86,13 +44,15 @@ def get_finance_researcher_team(
     session_id: Optional[str] = None,
     debug_mode: bool = True,
 ):
-    model_id = model_id or team_settings.gpt_4
+    model_id = model_id or team_settings.gemini_2_5_flash_lite
+    a_web = web_agent()
+    a_finance = finance_agent()
 
     return Team(
         name="Finance Researcher Team",
         team_id="financial-researcher-team",
         mode="route",
-        members=[web_agent, finance_agent],
+        members=[a_web, a_finance],
         instructions=[
             "You are a team of finance researchers!",
         ],
