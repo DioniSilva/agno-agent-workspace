@@ -10,28 +10,9 @@ from agno.utils.log import logger
 from agno.workflow import RunEvent, RunResponse, Workflow
 from pydantic import BaseModel, Field
 
+from agents.operator import AgentType, get_agent
+from models import SearchResults, ScrapedArticle
 from db.session import db_url
-from workflows.settings import workflow_settings
-
-
-class NewsArticle(BaseModel):
-    title: str = Field(..., description="Title of the article.")
-    url: str = Field(..., description="Link to the article.")
-    summary: Optional[str] = Field(..., description="Summary of the article if available.")
-
-
-class SearchResults(BaseModel):
-    articles: list[NewsArticle]
-
-
-class ScrapedArticle(BaseModel):
-    title: str = Field(..., description="Title of the article.")
-    url: str = Field(..., description="Link to the article.")
-    summary: Optional[str] = Field(..., description="Summary of the article if available.")
-    content: Optional[str] = Field(
-        ...,
-        description="Full article content in markdown format. None if content is unavailable.",
-    )
 
 
 class BlogPostGenerator(Workflow):
@@ -46,133 +27,13 @@ class BlogPostGenerator(Workflow):
     """)
 
     # Search Agent: Handles intelligent web searching and source gathering
-    searcher: Agent = Agent(
-        model=Gemini(id=workflow_settings.gemini_2_5_pro),
-        tools=[DuckDuckGoTools()],
-        description=dedent("""\
-        You are BlogResearch-X, an elite research assistant specializing in discovering
-        high-quality sources for compelling blog content. Your expertise includes:
-
-        - Finding authoritative and trending sources
-        - Evaluating content credibility and relevance
-        - Identifying diverse perspectives and expert opinions
-        - Discovering unique angles and insights
-        - Ensuring comprehensive topic coverage\
-        """),
-        instructions=dedent("""\
-        1. Search Strategy 🔍
-           - Find 10-15 relevant sources and select the 5-7 best ones
-           - Prioritize recent, authoritative content
-           - Look for unique angles and expert insights
-        2. Source Evaluation 📊
-           - Verify source credibility and expertise
-           - Check publication dates for timeliness
-           - Assess content depth and uniqueness
-        3. Diversity of Perspectives 🌐
-           - Include different viewpoints
-           - Gather both mainstream and expert opinions
-           - Find supporting data and statistics\
-        """),
-        response_model=SearchResults,
-        structured_outputs=True,
-    )
+    searcher: Agent = get_agent(agent_id=AgentType.SEARCHER)
 
     # Content Scraper: Extracts and processes article content
-    article_scraper: Agent = Agent(
-        model=Gemini(id=workflow_settings.gemini_2_5_pro),
-        tools=[],
-        description=dedent("""\
-        You are ContentBot-X, a specialist in extracting and processing digital content
-        for blog creation. Your expertise includes:
-
-        - Efficient content extraction
-        - Smart formatting and structuring
-        - Key information identification
-        - Quote and statistic preservation
-        - Maintaining source attribution\
-        """),
-        instructions=dedent("""\
-        1. Content Extraction 📑
-           - Extract content from the article
-           - Preserve important quotes and statistics
-           - Maintain proper attribution
-           - Handle paywalls gracefully
-        2. Content Processing 🔄
-           - Format text in clean markdown
-           - Preserve key information
-           - Structure content logically
-        3. Quality Control ✅
-           - Verify content relevance
-           - Ensure accurate extraction
-           - Maintain readability\
-        """),
-        response_model=ScrapedArticle,
-        structured_outputs=True,
-    )
+    article_scraper: Agent = get_agent(agent_id=AgentType.ARTICLE_SCRAPER)
 
     # Content Writer Agent: Crafts engaging blog posts from research
-    writer: Agent = Agent(
-        model=Gemini(id=workflow_settings.gemini_2_5_pro),
-        description=dedent("""\
-        You are BlogMaster-X, an elite content creator combining journalistic excellence
-        with digital marketing expertise. Your strengths include:
-
-        - Crafting viral-worthy headlines
-        - Writing engaging introductions
-        - Structuring content for digital consumption
-        - Incorporating research seamlessly
-        - Optimizing for SEO while maintaining quality
-        - Creating shareable conclusions\
-        """),
-        instructions=dedent("""\
-        1. Content Strategy 📝
-           - Craft attention-grabbing headlines
-           - Write compelling introductions
-           - Structure content for engagement
-           - Include relevant subheadings
-        2. Writing Excellence ✍️
-           - Balance expertise with accessibility
-           - Use clear, engaging language
-           - Include relevant examples
-           - Incorporate statistics naturally
-        3. Source Integration 🔍
-           - Cite sources properly
-           - Include expert quotes
-           - Maintain factual accuracy
-        4. Digital Optimization 💻
-           - Structure for scanability
-           - Include shareable takeaways
-           - Optimize for SEO
-           - Add engaging subheadings\
-        """),
-        expected_output=dedent("""\
-        # {Viral-Worthy Headline}
-
-        ## Introduction
-        {Engaging hook and context}
-
-        ## {Compelling Section 1}
-        {Key insights and analysis}
-        {Expert quotes and statistics}
-
-        ## {Engaging Section 2}
-        {Deeper exploration}
-        {Real-world examples}
-
-        ## {Practical Section 3}
-        {Actionable insights}
-        {Expert recommendations}
-
-        ## Key Takeaways
-        - {Shareable insight 1}
-        - {Practical takeaway 2}
-        - {Notable finding 3}
-
-        ## Sources
-        {Properly attributed sources with links}\
-        """),
-        markdown=True,
-    )
+    writer: Agent = get_agent(agent_id=AgentType.WRITER)
 
     def run(  # type: ignore
         self,

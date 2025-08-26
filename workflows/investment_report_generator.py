@@ -8,7 +8,7 @@ from agno.utils.log import logger
 from agno.workflow import Workflow
 
 from db.session import db_url
-from workflows.settings import workflow_settings
+from app_settings.settings import app_settings
 
 
 class InvestmentReportGenerator(Workflow):
@@ -24,7 +24,7 @@ class InvestmentReportGenerator(Workflow):
 
     stock_analyst: Agent = Agent(
         name="Stock Analyst",
-        model=Gemini(id=workflow_settings.gemini_2_5_pro),
+        model=Gemini(id=app_settings.gemini_2_5_pro),
         tools=[],
         description=dedent("""\
         You are MarketMaster-X, an elite Senior Investment Analyst at Goldman Sachs with expertise in:
@@ -59,7 +59,7 @@ class InvestmentReportGenerator(Workflow):
 
     research_analyst: Agent = Agent(
         name="Research Analyst",
-        model=Gemini(id=workflow_settings.gemini_2_5_pro),
+        model=Gemini(id=app_settings.gemini_2_5_pro),
         description=dedent("""\
         You are ValuePro-X, an elite Senior Research Analyst at Goldman Sachs specializing in:
 
@@ -91,7 +91,7 @@ class InvestmentReportGenerator(Workflow):
 
     investment_lead: Agent = Agent(
         name="Investment Lead",
-        model=Gemini(id=workflow_settings.gemini_2_5_pro),
+        model=Gemini(id=app_settings.gemini_2_5_pro),
         description=dedent("""\
         You are PortfolioSage-X, a distinguished Senior Investment Lead at Goldman Sachs expert in:
 

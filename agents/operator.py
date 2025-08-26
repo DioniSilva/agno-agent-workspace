@@ -3,11 +3,33 @@ from typing import List, Optional
 
 from agents.sage import get_sage
 from agents.scholar import get_scholar
+from agents.article_scraper import article_scraper
+from agents.writer import writer
+from agents.searcher import search_agent
 
 
 class AgentType(Enum):
     SAGE = "sage"
     SCHOLAR = "scholar"
+    ARTICLE_SCRAPER = "article_scraper"
+    WRITER = "writer"
+    SEARCHER = "searcher"
+
+# Use Factory Pattern to improve agent instantiation
+class AgentFactory:
+    @staticmethod
+    def create(agent_id, **kwargs):
+        factories = {
+            AgentType.SAGE: lambda: get_sage(**kwargs),
+            AgentType.ARTICLE_SCRAPER: lambda: article_scraper(),
+            AgentType.WRITER: lambda: writer(),
+            AgentType.SEARCHER: lambda: search_agent(),
+            AgentType.SCHOLAR: lambda: get_scholar(**kwargs),
+        }
+        factory = factories.get(agent_id)
+        if factory:
+            return factory()
+        raise ValueError(f"Unknown agent_id: {agent_id}")
 
 
 def get_available_agents() -> List[str]:
@@ -22,7 +44,6 @@ def get_agent(
     session_id: Optional[str] = None,
     debug_mode: bool = True,
 ):
-    if agent_id == AgentType.SAGE:
-        return get_sage(model_id=model_id, user_id=user_id, session_id=session_id, debug_mode=debug_mode)
-    else:
-        return get_scholar(model_id=model_id, user_id=user_id, session_id=session_id, debug_mode=debug_mode)
+    kwargs = dict(model_id=model_id, user_id=user_id, session_id=session_id, debug_mode=debug_mode)
+    return AgentFactory.create(agent_id, **kwargs)
+    
